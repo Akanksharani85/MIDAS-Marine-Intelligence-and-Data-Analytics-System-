@@ -1,0 +1,6 @@
+Date,Location,Temperature_Celsius,Salinity_PSU,Fish_Species_Count
+2025-09-01,Mumbai Coast,28.5,35.2,120
+2025-09-01,Chennai Coast,29.1,34.9,155
+2025-09-02,Mumbai Coast,28.6,35.3,125
+2025-09-02,Chennai Coast,29.3,34.8,160
+2025-09-03,Goa Coast,27.9,35.5,210

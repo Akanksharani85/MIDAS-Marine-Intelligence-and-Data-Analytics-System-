@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDAS | Policy Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(circle at top right, rgba(14, 165, 233, 0.15), transparent 40%), radial-gradient(circle at bottom left, rgba(34, 211, 238, 0.1), transparent 50%); background-attachment: fixed; }
+        .glass-card { background-color: rgba(30, 41, 59, 0.5); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.5); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
+    </style>
+</head>
+<body class="text-slate-300">
+    <div class="flex h-screen overflow-hidden">
+        <aside class="w-64 bg-slate-900/80 backdrop-filter backdrop-blur-lg border-r border-slate-800 p-6 flex flex-col">
+        </aside>
+
+        <main class="flex-1 overflow-y-auto">
+            <div class="p-6 md:p-8">
+                <header class="flex justify-between items-center mb-8 pb-4 border-b border-gray-700">
+                    <a href="/dashboard.html">
+                        <img src="/assets/midas_logo.jpg" alt="MIDAS Logo" class="h-10 w-auto">
+                    </a>
+                    <nav class="flex items-center space-x-4">
+                        <a href="/dashboard.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Scientist View</a>
+                        <a href="/policymaker_dashboard.html" class="bg-cyan-600 text-white px-3 py-2 rounded-md text-sm font-medium">Policy View</a>
+                        <a href="/upload.html" class="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Upload Data</a>
+                    </nav>
+                    <div class="flex items-center">
+                         <div class="text-sm text-gray-400 mr-4"><span id="userEmail" class="font-bold text-cyan-300"></span></div>
+                        <button id="logoutBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm">Logout</button>
+                    </div>
+                </header>
+
+                <h1 class="text-3xl font-bold text-cyan-400 mb-2">Policy Dashboard</h1>
+                <p class="text-gray-400 mb-8">Location-wise summary of key environmental metrics.</p>
+
+                <div id="summary-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const firebaseConfig = { 
+            apiKey: "AIzaSyAAOHTtfNx1I6SySz3j_oE-qpszEkWWLFk",
+            authDomain: "aqua-ai-platform.firebaseapp.com",
+            projectId: "aqua-ai-platform",
+            storageBucket: "aqua-ai-platform.firebasestorage.app",
+            messagingSenderId: "1064525361455",
+            appId: "1:1064525361455:web:ce2b002c5eecb7381371da",
+            measurementId: "G-3GN34Y4YFC" 
+        };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        
+        const cardsContainer = document.getElementById('summary-cards');
+        const userEmailSpan = document.getElementById('userEmail');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const sidebar = document.querySelector('aside');
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                userEmailSpan.textContent = user.email;
+                
+                // UPDATED: Sidebar content now includes the logo
+                sidebar.innerHTML = `
+                    <div class="mb-10 text-center">
+                        <img src="/assets/midas_logo.jpg" alt="MIDAS Logo" class="h-16 w-auto mx-auto mb-2">
+                        <h1 class="text-xl font-bold text-white">MIDAS</h1>
+                        <p class="text-xs text-slate-400">Marine Intelligence and Data Analytics System</p>
+                    </div>
+                    <nav class="flex-grow">
+                        <ul class="space-y-3">
+                            <li><a href="/dashboard.html" class="flex items-center gap-4 p-3 rounded-lg hover:bg-cyan-400/10 hover:text-cyan-300"><i data-lucide="layout-dashboard"></i><span>Scientist View</span></a></li>
+                            <li><a href="/policymaker_dashboard.html" class="flex items-center gap-4 p-3 rounded-lg bg-cyan-400/10 text-white font-semibold"><i data-lucide="briefcase"></i><span>Policy View</span></a></li>
+                            <li><a href="/upload.html" class="flex items-center gap-4 p-3 rounded-lg hover:bg-cyan-400/10 hover:text-cyan-300"><i data-lucide="upload-cloud"></i><span>Upload Data</span></a></li>
+                        </ul>
+                    </nav>
+                    <div class="mt-auto">
+                        <div class="flex items-center gap-4 p-3 rounded-lg bg-slate-800">
+                             <div class="flex-1"><p class="font-semibold text-white text-sm">${user.email}</p></div>
+                             <button id="sidebarLogoutBtn" class="text-slate-400 hover:text-white"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                        </div>
+                    </div>`;
+                lucide.createIcons(); // Re-render icons
+                document.getElementById('sidebarLogoutBtn').addEventListener('click', () => auth.signOut());
+                
+                fetchSummaryData();
+            } else {
+                window.location.href = '/login.html'; // Redirect to login page
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            auth.signOut().catch(error => console.error('Sign out error:', error));
+        });
+
+        async function fetchSummaryData() {
+            try {
+                const response = await fetch('/api/policy-summary');
+                if (!response.ok) throw new Error('Failed to fetch summary data');
+                const summaries = await response.json();
+
+                cardsContainer.innerHTML = '';
+                if (summaries.length === 0) {
+                    cardsContainer.innerHTML = `<p class="text-gray-500 col-span-3">No summary data available yet. Please upload data first.</p>`;
+                    return;
+                }
+
+                summaries.forEach(summary => {
+                    const card = document.createElement('div');
+                    card.className = 'glass-card p-6 rounded-xl';
+                    const lastUpdatedDate = new Date(summary.last_updated).toLocaleDateString();
+
+                    card.innerHTML = `
+                        <h2 class="text-xl font-bold text-cyan-400 border-b border-slate-700 pb-2 mb-4">${summary.Location}</h2>
+                        <ul class="space-y-2 text-sm">
+                            <li class="flex justify-between"><span>Avg. Temperature:</span> <span class="font-semibold text-white">${summary.avg_temp}°C</span></li>
+                            <li class="flex justify-between"><span>Avg. Salinity:</span> <span class="font-semibold text-white">${summary.avg_salinity} PSU</span></li>
+                            <li class="flex justify-between"><span>Data Points:</span> <span class="font-semibold text-white">${summary.record_count}</span></li>
+                            <li class="flex justify-between mt-2 pt-2 border-t border-slate-700/50"><span>Last Updated:</span> <span class="text-slate-400">${lastUpdatedDate}</span></li>
+                        </ul>
+                    `;
+                    cardsContainer.appendChild(card);
+                });
+
+            } catch (error) {
+                console.error(error);
+                cardsContainer.innerHTML = `<p class="text-red-500 col-span-3">Error loading dashboard data.</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

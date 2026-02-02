@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDAS | Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #020617; /* slate-950 */
+            background-image: radial-gradient(circle at top right, rgba(14, 165, 233, 0.15), transparent 40%),
+                              radial-gradient(circle at bottom left, rgba(34, 211, 238, 0.1), transparent 50%);
+            background-attachment: fixed;
+        }
+        .glass-card {
+            background-color: rgba(30, 41, 59, 0.5); 
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+    </style>
+</head>
+<body class="text-slate-300 flex items-center justify-center min-h-screen">
+    <div class="glass-card p-8 rounded-xl w-full max-w-md">
+        
+        <div class="mb-8 text-center">
+            <img src="/assets/Midas_logo.jpg" alt="MIDAS Logo" class="h-24 w-auto mx-auto">
+        </div>
+        
+        <div id="auth-form" class="space-y-6">
+            <div>
+                <label for="email" class="block mb-2 text-sm font-medium">Email</label>
+                <input type="email" id="email" class="bg-slate-900/50 border border-slate-700 text-white sm:text-sm rounded-lg block w-full p-2.5 focus:ring-cyan-500 focus:border-cyan-500" placeholder="name@company.com" required>
+            </div>
+            <div>
+                <label for="password" class="block mb-2 text-sm font-medium">Password</label>
+                <input type="password" id="password" class="bg-slate-900/50 border border-slate-700 text-white sm:text-sm rounded-lg block w-full p-2.5 focus:ring-cyan-500 focus:border-cyan-500" placeholder="••••••••" required>
+            </div>
+            <div id="message" class="text-sm text-red-400 text-center h-4"></div>
+            <div class="flex items-center space-x-4 pt-2">
+                <button id="loginBtn" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-2.5 px-4 rounded-lg transition-all duration-200 hover:-translate-y-0.5">Login</button>
+                <button id="signupBtn" class="w-full bg-slate-700 hover:bg-slate-600 text-white font-bold py-2.5 px-4 rounded-lg transition-all duration-200 hover:-translate-y-0.5">Sign Up</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAAOHTtfNx1I6SySz3j_oE-qpszEkWWLFk",
+            authDomain: "aqua-ai-platform.firebaseapp.com",
+            projectId: "aqua-ai-platform",
+            storageBucket: "aqua-ai-platform.firebasestorage.app",
+            messagingSenderId: "1064525361455",
+            appId: "1:106452sc002c5eecb7381371da",
+            measurementId: "G-3GN34Y4YFC"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const messageDiv = document.getElementById('message');
+
+        function handleAuthSuccess(userCredential) {
+            console.log('Auth successful for:', userCredential.user.email);
+            const email = userCredential.user.email;
+
+            // Simple role-based redirection for the demo
+            if (email.includes('policy')) {
+                window.location.href = '/policymaker_dashboard.html';
+            } else {
+                window.location.href = '/dashboard.html'; // Default to scientist
+            }
+        }
+
+        loginBtn.addEventListener('click', () => {
+            messageDiv.textContent = '';
+            auth.signInWithEmailAndPassword(emailInput.value, passwordInput.value)
+                .then(handleAuthSuccess)
+                .catch((error) => { messageDiv.textContent = error.message; });
+        });
+
+        signupBtn.addEventListener('click', () => {
+            messageDiv.textContent = '';
+            auth.createUserWithEmailAndPassword(emailInput.value, passwordInput.value)
+                .then(handleAuthSuccess)
+                .catch((error) => { messageDiv.textContent = error.message; });
+        });
+    </script>
+</body>
+</html>

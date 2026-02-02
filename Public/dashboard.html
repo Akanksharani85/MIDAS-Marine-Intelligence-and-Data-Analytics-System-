@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDAS | Scientist Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.7/firebase-auth-compat.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #020617; background-image: radial-gradient(circle at top right, rgba(14, 165, 233, 0.15), transparent 40%), radial-gradient(circle at bottom left, rgba(34, 211, 238, 0.1), transparent 50%); background-attachment: fixed; }
+        .glass-card { background-color: rgba(30, 41, 59, 0.5); backdrop-filter: blur(12px); border: 1px solid rgba(51, 65, 85, 0.5); box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37); }
+    </style>
+</head>
+<body class="text-slate-300">
+
+    <div class="flex h-screen overflow-hidden">
+        <aside id="sidebar" class="w-64 bg-slate-900/80 backdrop-filter backdrop-blur-lg border-r border-slate-800 p-6 flex flex-col">
+            <div class="mb-10 text-center">
+    <img src="/assets/Midas_logo.jpg" alt="MIDAS Logo" class="h-16 w-auto mx-auto mb-2">
+    <h1 class="text-xl font-bold text-white">MIDAS</h1>
+    <p class="text-xs text-slate-400">Marine Intelligence and Data Analytics System</p>
+</div>
+            <nav class="flex-grow">
+                <ul class="space-y-3">
+                    <li><a href="/dashboard.html" class="flex items-center gap-4 p-3 rounded-lg bg-cyan-400/10 text-white font-semibold"><i data-lucide="layout-dashboard"></i><span>Scientist View</span></a></li>
+                    <li><a href="/policymaker_dashboard.html" class="flex items-center gap-4 p-3 rounded-lg hover:bg-cyan-400/10 hover:text-cyan-300"><i data-lucide="briefcase"></i><span>Policy View</span></a></li>
+                    <li><a href="/upload.html" class="flex items-center gap-4 p-3 rounded-lg hover:bg-cyan-400/10 hover:text-cyan-300"><i data-lucide="upload-cloud"></i><span>Upload Data</span></a></li>
+                </ul>
+            </nav>
+            <div class="mt-auto">
+                <div class="flex items-center gap-4 p-3 rounded-lg bg-slate-800">
+                    <div class="flex-1">
+                        <p class="font-semibold text-white text-sm" id="userEmail">Loading...</p>
+                    </div>
+                    <button id="logoutBtn" class="text-slate-400 hover:text-white"><i data-lucide="log-out" class="w-5 h-5"></i></button>
+                </div>
+            </div>
+        </aside>
+
+        <main class="flex-1 overflow-y-auto">
+            <div class="p-6 md:p-8">
+                <header class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white">Scientist Dashboard</h2>
+                        <p class="text-slate-400">Explore detailed oceanographic data.</p>
+                    </div>
+                </header>
+
+                <div class="mb-6">
+                    <label for="locationFilter" class="block mb-2 text-sm font-medium text-gray-300">Filter by Location:</label>
+                    <select id="locationFilter" class="glass-card bg-slate-900/50 border border-slate-700 text-white text-sm rounded-lg block w-full md:w-1/3 p-2.5 focus:ring-cyan-500 focus:border-cyan-500"></select>
+                </div>
+
+                <section class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+                    <div class="glass-card p-6 rounded-xl lg:col-span-3 flex flex-col h-80">
+                        <h3 class="text-lg font-semibold text-white mb-4">Temperature Trend</h3>
+                        <div class="relative flex-1 w-full"><canvas id="temperatureChart"></canvas></div>
+                    </div>
+                    <div class="glass-card p-6 rounded-xl lg:col-span-2 flex flex-col h-80">
+                        <h3 class="text-lg font-semibold text-white mb-4">Data Count by Location</h3>
+                        <div class="relative flex-1 w-full"><canvas id="countChart"></canvas></div>
+                    </div>
+                </section>
+
+                <section>
+                    <div class="glass-card rounded-xl overflow-hidden">
+                        <div class="p-6">
+                            <h3 class="text-lg font-semibold text-white">Detailed Data Records</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left"><thead class="border-b border-slate-700"><tr><th class="p-4 font-semibold text-white">Date</th><th class="p-4 font-semibold text-white">Location</th><th class="p-4 font-semibold text-white">Temp (°C)</th><th class="p-4 font-semibold text-white">Salinity</th><th class="p-4 font-semibold text-white">pH</th></tr></thead><tbody id="dataTableBody"></tbody></table>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        lucide.createIcons();
+        const firebaseConfig = { /* 🚨 PASTE YOUR FIREBASE CONFIG HERE */
+              apiKey: "AIzaSyAAOHTtfNx1I6SySz3j_oE-qpszEkWWLFk",
+            authDomain: "aqua-ai-platform.firebaseapp.com",
+            projectId: "aqua-ai-platform",
+            storageBucket: "aqua-ai-platform.firebasestorage.app",
+            messagingSenderId: "1064525361455",
+            appId: "1:1064525361455:web:ce2b002c5eecb7381371da",
+            measurementId: "G-3GN34Y4YFC"
+         };
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        
+        const userEmailSpan = document.getElementById('userEmail');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const tableBody = document.getElementById('dataTableBody');
+        const locationFilter = document.getElementById('locationFilter');
+        const tempChartCanvas = document.getElementById('temperatureChart');
+        const countChartCanvas = document.getElementById('countChart');
+        let tempChart = null, countChart = null;
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                userEmailSpan.textContent = user.email;
+                populateFilter();
+                fetchDataAndRender();
+            } else {
+                window.location.href = '/login.html';
+            }
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            auth.signOut().catch(error => console.error('Sign out error:', error));
+        });
+
+        function renderCharts(data) {
+            if (tempChart) tempChart.destroy();
+            if (countChart) countChart.destroy();
+
+            const chartTextColor = '#94a3b8';
+            const chartGridColor = 'rgba(51, 65, 85, 0.5)';
+
+            // Temperature Line Chart
+            const lineLabels = data.map(row => row.Date.split('T')[0]);
+            const tempData = data.map(row => row.Temperature_Celsius);
+            tempChart = new Chart(tempChartCanvas, {
+                type: 'line', data: { labels: lineLabels, datasets: [{ label: 'Temperature (°C)', data: tempData, borderColor: '#06b6d4', backgroundColor: 'rgba(6, 182, 212, 0.1)', tension: 0.4, fill: true }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: false, grid: { color: chartGridColor }, ticks: { color: chartTextColor } }, x: { grid: { color: chartGridColor }, ticks: { color: chartTextColor } } }, plugins: { legend: { labels: { color: chartTextColor } } } }
+            });
+
+            // Location Count Bar Chart
+            const locationCounts = data.reduce((acc, row) => { acc[row.Location] = (acc[row.Location] || 0) + 1; return acc; }, {});
+            const barLabels = Object.keys(locationCounts);
+            const barData = Object.values(locationCounts);
+            countChart = new Chart(countChartCanvas, {
+                type: 'bar', data: { labels: barLabels, datasets: [{ label: 'Data Points', data: barData, backgroundColor: 'rgba(14, 165, 233, 0.6)' }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { grid: { color: chartGridColor }, ticks: { color: chartTextColor, stepSize: 1 } }, x: { grid: { color: chartGridColor }, ticks: { color: chartTextColor } } }, plugins: { legend: { display: false } } }
+            });
+        }
+        
+        function renderTable(data) {
+            tableBody.innerHTML = '';
+            if (data.length === 0) { tableBody.innerHTML = '<tr><td colspan="5" class="text-center p-4">No data available.</td></tr>'; return; }
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-800 hover:bg-sky-500/10';
+                const formattedDate = row.Date.split('T')[0];
+                const phValue = row.ph === null || row.ph === undefined ? 'N/A' : row.ph;
+                tr.innerHTML = `<td class="p-4">${formattedDate}</td><td class="p-4 text-white">${row.Location}</td><td class="p-4">${row.Temperature_Celsius}</td><td class="p-4">${row.Salinity_PSU}</td><td class="p-4">${phValue}</td>`;
+                tableBody.appendChild(tr);
+            });
+        }
+
+        async function fetchDataAndRender(location = '') {
+            let apiUrl = '/api/oceanographic-data';
+            if (location) { apiUrl += `?location=${encodeURIComponent(location)}`; }
+            try {
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+                renderTable(data);
+                renderCharts(data);
+            } catch (error) { console.error('Failed to fetch data:', error); }
+        }
+
+        async function populateFilter() {
+             try {
+                const response = await fetch('/api/oceanographic-data');
+                const data = await response.json();
+                const locations = [...new Set(data.map(item => item.Location))];
+                locationFilter.innerHTML = '<option value="">All Locations</option>';
+                locations.forEach(location => {
+                    const option = document.createElement('option');
+                    option.value = location;
+                    option.textContent = location;
+                    locationFilter.appendChild(option);
+                });
+            } catch (error) { console.error('Failed to populate filters:', error); }
+        }
+        
+        locationFilter.addEventListener('change', (event) => {
+            fetchDataAndRender(event.target.value);
+        });
+
+        // Initial load is now handled by the auth check
+    </script>
+</body>
+</html>
